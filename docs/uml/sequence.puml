@@ -1,0 +1,49 @@
+@startuml
+actor "Жіберуші" as User
+participant "JavaFX клиент A" as A
+participant "Spring Security" as Security
+participant "MessageService" as Service
+participant "CryptoService" as Crypto
+database "PostgreSQL" as DB
+participant "Алушының клиенті B" as B
+User -> A : Хабар енгізу
+A -> A : Жаңа AES кілті + nonce\nAES-GCM(text, AAD)\nRSA-OAEP(serverPublicKey, AES key)
+A -> Security : HTTPS POST /messages\nSession + CSRF + TransportEnvelope
+Security -> Security : Session, ACTIVE статус, CSRF тексеру
+alt Аутентификация жарамсыз
+ Security --> A : 401 / 403; хабар сақталмайды
+else Аутентификация дұрыс
+ Security -> Service : send(envelope, authenticatedPrincipal)
+ Service -> DB : Чат мүшелігі, өлшем, duplicate тексеру
+ alt Рұқсат жоқ
+  Service --> A : 403; мазмұн өңделмейді
+ else Қайталанған clientMessageId
+  Service --> A : Бұрын сақталған messageId
+ else Жаңа және рұқсат етілген хабар
+  Service -> Crypto : RSA unwrap + AES-GCM verify/decrypt
+  alt OAEP немесе GCM тексеруі өтпеді
+   Crypto --> Service : Reject
+   Service --> A : Жалпы қате; сақтау жоқ
+  else Тексеру сәтті
+   Crypto --> Service : plaintext (тек жадта)
+   Service -> Crypto : Бөлек storage key + жаңа nonce\nAES-GCM шифрлау
+   Crypto --> Service : storageCiphertext + nonce + keyId
+   Service -> DB : Message + мазмұнсыз AuditEvent сақтау\nБір транзакция, UNIQUE sender/clientMessageId
+   DB --> Service : commit OK
+   Service --> A : messageId, accepted
+   Service -> Security : commit-тен кейін B мүшелігін тексеру
+   Security -> B : WSS жеке арна: messageId хабарламасы
+   B -> Security : HTTPS GET /messages/{id}
+   Security -> Service : Session + ағымдағы мүшелік тексеру
+   Service -> DB : ciphertext оқу
+   Service -> Crypto : Storage decrypt
+   Service --> B : HTTPS арқылы хабар мазмұны
+  end
+ end
+end
+note over Service,B
+Сервер сенімді: мазмұн сервер жадында ашылады.
+Бұл E2EE емес. Offline клиент тарихты кейін HTTPS арқылы алады.
+end note
+@enduml
+

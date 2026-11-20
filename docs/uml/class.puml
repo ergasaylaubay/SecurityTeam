@@ -1,0 +1,115 @@
+@startuml
+hide circle
+skinparam classAttributeIconSize 0
+class User {
+ +id: UUID
+ +username: String
+ -passwordHash: String
+ +role: Role
+ +status: UserStatus
+}
+enum Role {
+ USER
+ ADMIN
+}
+enum UserStatus {
+ PENDING
+ ACTIVE
+ BLOCKED
+}
+class Chat {
+ +id: UUID
+ +type: ChatType
+ +title: String
+ +createdAt: Instant
+}
+enum ChatType {
+ DIRECT
+ GROUP
+}
+class ChatMember {
+ +chatId: UUID
+ +userId: UUID
+ +memberRole: MemberRole
+ +joinedAt: Instant
+}
+enum MemberRole {
+ OWNER
+ MEMBER
+}
+class Message {
+ +id: UUID
+ +clientMessageId: UUID
+ +chatId: UUID
+ +senderId: UUID
+ +ciphertextAndTag: byte[]
+ +storageNonce: byte[]
+ +storageKeyId: String
+ +createdAt: Instant
+}
+class AuditEvent {
+ +id: UUID
+ +actorId: UUID
+ +action: String
+ +targetId: String
+ +result: String
+ +createdAt: Instant
+}
+class TransportEnvelope <<DTO>> {
+ +version: String
+ +clientMessageId: UUID
+ +chatId: UUID
+ +serverKeyId: String
+ +wrappedAesKey: byte[]
+ +nonce: byte[]
+ +ciphertextAndTag: byte[]
+}
+class AuthService {
+ +register()
+ +login()
+ +logout()
+}
+class ChatService {
+ +createChat()
+ +checkMembership()
+ +manageMembers()
+}
+class MessageService {
+ +send(envelope, principal)
+ +history(chatId, principal)
+}
+class CryptoService {
+ +encryptTransport()
+ +decryptTransport()
+ +encryptAtRest()
+ +decryptAtRest()
+}
+class AuditService {
+ +record()
+}
+User "1" -- "0..*" ChatMember
+Chat "1" -- "2..*" ChatMember
+Chat "1" -- "0..*" Message
+User "1" -- "0..*" Message : sends
+User "0..1" -- "0..*" AuditEvent : actor
+User --> Role
+User --> UserStatus
+Chat --> ChatType
+ChatMember --> MemberRole
+MessageService ..> TransportEnvelope
+MessageService --> ChatService
+MessageService --> CryptoService
+MessageService --> AuditService
+AuthService --> User
+AuthService --> AuditService
+note bottom of Message
+UNIQUE(senderId, clientMessageId)
+Базада тек шифрланған мазмұн.
+Storage AAD: messageId, chatId, senderId.
+end note
+note bottom of Chat
+DIRECT: дәл 2 мүше.
+GROUP: кемінде 2 мүше, 1 OWNER.
+end note
+@enduml
+

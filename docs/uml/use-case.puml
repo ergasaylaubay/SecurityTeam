@@ -1,0 +1,43 @@
+@startuml
+left to right direction
+actor "Қонақ" as Guest
+actor "Қызметкер" as Employee
+actor "Администратор" as Admin
+Admin --|> Employee
+rectangle "Қауіпсіз корпоративтік мессенджер" {
+ usecase "Тіркелу" as Register
+ usecase "Кіру / шығу" as Login
+ usecase "Жеке чат ашу" as Direct
+ usecase "Топтық чат құру" as Group
+ usecase "Хабар жіберу" as Send
+ usecase "Хабар тарихын оқу" as History
+ usecase "Чат мүшелігін тексеру" as Membership
+ usecase "Топ мүшелерін басқару" as Manage
+ usecase "Аккаунтты белсендіру / бұғаттау" as Block
+ usecase "Рөл тағайындау" as Role
+ usecase "Аудит журналын қарау" as Audit
+}
+Guest -- Register
+Guest -- Login
+Employee -- Login
+Employee -- Direct
+Employee -- Group
+Employee -- Send
+Employee -- History
+Employee -- Manage
+Send ..> Membership : <<include>>
+History ..> Membership : <<include>>
+Manage ..> Membership : <<include>>
+Admin -- Block
+Admin -- Role
+Admin -- Audit
+note bottom of Manage
+Тек топ OWNER-і мүшелерді басқарады.
+ADMIN рөлі чат мүшелігін алмастырмайды.
+end note
+note bottom of Register
+Жаңа аккаунт PENDING күйінде.
+ADMIN белсендіргеннен кейін чатқа кіреді.
+end note
+@enduml
+

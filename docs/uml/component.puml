@@ -1,0 +1,38 @@
+@startuml
+skinparam componentStyle rectangle
+node "Қызметкер құрылғысы" {
+ component "JavaFX UI" as UI
+ component "Client Crypto (JCA)" as CC
+ component "HTTPS / WSS клиент" as HTTP
+ UI --> CC
+ UI --> HTTP
+}
+node "Қолданба сервері" {
+ component "REST API" as API
+ component "Spring Security\nSession + RBAC + membership" as Security
+ component "Chat / Message Service" as Service
+ component "Server Crypto (JCA)" as SC
+ component "WebSocket notifications" as WS
+ component "Audit Service" as Audit
+ component "Repository" as Repo
+ API --> Security
+ Security --> Service
+ Service --> SC
+ Service --> Repo
+ Service --> Audit
+ Service --> WS : after commit
+ Audit --> Repo
+}
+database "PostgreSQL\nUsers, Chats, Members,\nEncrypted Messages, Audit" as DB
+artifact "Қорғалған key store\nRSA private key + storage AES key\nGitHub пен DB-ден бөлек" as KS
+HTTP --> API : HTTPS
+HTTP --> WS : WSS; own user queue
+SC --> KS
+Repo --> DB : шектеулі DB account
+note bottom of Security
+HTTP және WebSocket аутентификациясы байланысқан.
+SEND/SUBSCRIBE және history үшін рұқсат тексеріледі.
+Бұғатталғанда session/socket жабылады.
+end note
+@enduml
+
