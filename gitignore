@@ -1,0 +1,32 @@
+# Maven outputs
+**/target/
+*.class
+
+# IntelliJ IDEA and editors
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Local credentials and keys
+secrets/
+*.p12
+*.pfx
+*.jks
+*.key
+.env
+.env.*
+!.env.example
+
+# Local runtime data
+*.log
+logs/
+*.db
+*.mv.db
+*.trace.db
+
+# OS files
+.DS_Store
+Thumbs.db
